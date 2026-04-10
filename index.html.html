@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모바일 게임 모니터링 가이드</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<style>
+:root{--sw:264px;--bg:#0d1117;--bg2:#161b22;--bg3:#1c2333;--bg4:#243044;--blue:#58a6ff;--bd:rgba(88,166,255,.1);--bb:rgba(88,166,255,.22);--cyan:#39d0d8;--cd:rgba(57,208,216,.1);--cb:rgba(57,208,216,.22);--green:#3fb950;--gd:rgba(63,185,80,.1);--gb:rgba(63,185,80,.22);--amber:#e3b341;--ad:rgba(227,179,65,.08);--ab:rgba(227,179,65,.25);--rose:#f47067;--rd:rgba(244,112,103,.1);--rb:rgba(244,112,103,.22);--t1:#e6edf3;--t2:#8b949e;--t3:#484f58;--bdr:#21262d}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--t1);line-height:1.75;font-size:15px}
+
+/* SIDEBAR */
+.sb{position:fixed;top:0;left:0;bottom:0;width:var(--sw);background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;transition:transform .3s;overflow:hidden}
+.sb-h{padding:22px 18px 16px;border-bottom:1px solid var(--bdr)}
+.sb-h h2{font-size:1rem;font-weight:800;margin-bottom:1px}
+.sb-h span{font-size:.7rem;color:var(--t3)}
+.sb-n{flex:1;overflow-y:auto;padding:10px 8px}
+.sb-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:12px 10px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:7px;cursor:pointer;font-size:.84rem;font-weight:500;color:var(--t2);border:1px solid transparent;transition:all .2s;position:relative}
+.ni:hover{background:var(--bg3);color:var(--t1)}
+.ni.act{background:var(--bd);color:var(--blue);border-color:var(--bb);font-weight:700}
+.ni .ic{font-size:.95rem;width:24px;text-align:center;flex-shrink:0}
+/* Sub items */
+.ni-sub{padding-left:42px}
+.ni-sub .ic{font-size:.8rem;width:18px}
+.ni.ni-sub{font-size:.8rem;padding:6px 11px}
+.sb-f{padding:10px 12px;border-top:1px solid var(--bdr);display:flex;flex-direction:column;gap:5px}
+.sb-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:600;color:var(--t2);transition:all .2s}
+.sb-btn:hover{background:var(--bg4);color:var(--t1)}
+.sb-btn.ea{background:var(--ad);border-color:var(--ab);color:var(--amber)}
+
+/* MOBILE */
+.mt{display:none;position:fixed;top:.7rem;left:.7rem;z-index:200;width:40px;height:40px;background:var(--bg2);border:1px solid var(--bdr);border-radius:7px;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;color:var(--t2)}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50}
+.ov.show{display:block}
+
+/* MAIN */
+.mn{margin-left:var(--sw);min-height:100vh}
+.pg{display:none;padding:2.2rem 2.8rem 3.5rem;max-width:860px;animation:fi .3s ease}
+.pg.act{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* EDIT */
+body.ed [data-e]{outline:none;border-radius:3px;background:var(--ad);box-shadow:inset 0 0 0 1px var(--ab);padding:1px 4px;cursor:text}
+body.ed [data-e]:focus{background:rgba(227,179,65,.12);box-shadow:inset 0 0 0 2px var(--amber)}
+body.ed .db{display:inline-flex!important}
+body.ed .add-row{display:flex!important}
+
+.db{display:none!important;width:24px;height:24px;border-radius:5px;background:var(--rd);border:1px solid var(--rb);color:var(--rose);font-size:.78rem;cursor:pointer;align-items:center;justify-content:center;font-family:inherit;position:absolute;top:7px;right:7px;transition:all .15s;z-index:5}
+.db:hover{background:rgba(244,112,103,.2)}
+
+.add-row{display:none!important;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:10px;border:1px dashed var(--bdr);border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--t3);transition:all .2s}
+.add-row:hover{background:var(--bg3);color:var(--t2);border-color:var(--t3)}
+
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);padding:8px 20px;border-radius:100px;font-size:.8rem;font-weight:500;z-index:300;opacity:0;transition:all .3s}
+.toast.vis{opacity:1}
+.toast.a{background:var(--ad);border:1px solid var(--ab);color:var(--amber)}
+.toast.g{background:var(--gd);border:1px solid var(--gb);color:var(--green)}
+
+/* COMPONENTS */
+.ptag{display:inline-flex;padding:4px 11px;border-radius:100px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+.ptag.bl{background:var(--bd);color:var(--blue);border:1px solid var(--bb)}
+.ptag.cy{background:var(--cd);color:var(--cyan);border:1px solid var(--cb)}
+.ptag.gr{background:var(--gd);color:var(--green);border:1px solid var(--gb)}
+.ptag.am{background:var(--ad);color:var(--amber);border:1px solid var(--ab)}
+.pt{font-size:1.55rem;font-weight:800;line-height:1.3;margin-bottom:.35rem;letter-spacing:-.02em}
+.pd{font-size:.92rem;color:var(--t2);margin-bottom:2rem;max-width:560px}
+
+/* HOME */
+.hm{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:calc(100vh - 5rem)}
+.hm .bg{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;background:var(--bd);border:1px solid var(--bb);border-radius:100px;font-size:.76rem;color:var(--blue);font-weight:600;margin-bottom:1.2rem}
+.hm .bg .dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pu 2s infinite}
+@keyframes pu{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hm h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:900;line-height:1.25;margin-bottom:.7rem;letter-spacing:-.03em}
+.hm>p{font-size:.98rem;color:var(--t2);max-width:420px;margin-bottom:1.8rem}
+.hg{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;max-width:440px}
+.hc{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--bg3);border:1px solid var(--bdr);border-radius:9px;cursor:pointer;transition:all .2s;font-size:.84rem;font-weight:600;color:var(--t1)}
+.hc:hover{background:var(--bg4);border-color:var(--bb);transform:translateY(-1px)}
+.hc .hi{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+
+/* FLOW */
+.flow-wrap{position:relative;margin-bottom:1.5rem}
+.flow{display:flex;align-items:center;overflow-x:auto;padding:12px 0 18px;gap:0}
+.fi{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:100px;padding:0 3px;position:relative}
+.fic{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;margin-bottom:6px}
+.fi .fl{font-size:.74rem;font-weight:700}
+.fi .fd{font-size:.66rem;color:var(--t3)}
+.fi .db{top:-4px;right:-4px;width:20px;height:20px;font-size:.65rem}
+.fa{font-size:.9rem;color:var(--t3);min-width:20px;text-align:center;margin-bottom:18px}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:9px}
+.st{display:flex;gap:13px;align-items:flex-start;background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;transition:all .2s;position:relative}
+.st:hover{background:var(--bg4)}
+.sn{width:32px;height:32px;min-width:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.88rem;background:var(--bd);color:var(--blue)}
+.st h4{font-size:.92rem;font-weight:700;margin-bottom:2px}
+.st p,.st .eb{font-size:.85rem;color:var(--t2)}
+
+/* CARDS */
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px}
+.cc{background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:18px;transition:all .2s;position:relative}
+.cc:hover{background:var(--bg4);transform:translateY(-1px)}
+.cc .ci{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;margin-bottom:9px}
+.cc h3{font-size:.95rem;font-weight:700;margin-bottom:4px}
+.cc p{font-size:.83rem;color:var(--t2)}
+
+/* TABLE */
+.pt2{width:100%;border-collapse:separate;border-spacing:0 5px;margin-top:.5rem}
+.pt2 thead th{padding:8px 13px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--bdr)}
+.pt2 tbody tr{background:var(--bg3);transition:all .2s;position:relative}
+.pt2 tbody tr:hover{background:var(--bg4)}
+.pt2 td{padding:11px 13px;font-size:.84rem}
+.pt2 td:first-child{border-radius:7px 0 0 7px}
+.pt2 td:last-child{border-radius:0 7px 7px 0}
+.pb{display:inline-flex;padding:3px 9px;border-radius:100px;font-size:.72rem;font-weight:700}
+.pb.cr{background:var(--rd);color:var(--rose);border:1px solid var(--rb)}
+.pb.hi{background:var(--ad);color:var(--amber);border:1px solid var(--ab)}
+.pb.md{background:var(--bd);color:var(--blue);border:1px solid var(--bb)}
+.pb.lo{background:var(--gd);color:var(--green);border:1px solid var(--gb)}
+.tb{display:inline-flex;padding:2px 7px;background:rgba(255,255,255,.04);border-radius:4px;font-size:.74rem;font-weight:500;color:var(--t2)}
+
+/* ALERT */
+.al{padding:13px 16px;border-radius:9px;display:flex;gap:10px;align-items:flex-start;margin-top:1.2rem;position:relative}
+.al.w{background:var(--ad);border:1px solid var(--ab)}
+.al.d{background:var(--rd);border:1px solid var(--rb)}
+.al.i{background:var(--bd);border:1px solid var(--bb)}
+.al .ai{font-size:1rem;flex-shrink:0;margin-top:1px}
+.al h4{font-size:.86rem;font-weight:700;margin-bottom:2px}
+.al p{font-size:.8rem;color:var(--t2);line-height:1.6}
+
+/* MISTAKE */
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:11px}
+.mc{background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;transition:all .2s;position:relative}
+.mc:hover{transform:translateY(-1px)}
+.mh{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);font-weight:700;font-size:.88rem}
+.mh .em{font-size:1rem}
+.mbd{padding:11px 16px}
+.mr{display:flex;gap:8px;align-items:flex-start;padding:5px 0}
+.mr+.mr{border-top:1px solid rgba(255,255,255,.02)}
+.ml{min-width:40px;padding:2px 6px;border-radius:4px;font-size:.7rem;font-weight:700;text-align:center;flex-shrink:0}
+.ml.bad{background:var(--rd);color:var(--rose)}
+.ml.good{background:var(--gd);color:var(--green)}
+.mtt{font-size:.82rem;color:var(--t2);line-height:1.6}
+
+/* MODAL */
+.mod-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center}
+.mod-bg.show{display:flex}
+.mod{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:24px;width:90%;max-width:420px}
+.mod h3{font-size:1rem;font-weight:800;margin-bottom:14px}
+.mod label{display:block;font-size:.8rem;font-weight:600;color:var(--t2);margin:10px 0 4px}
+.mod input,.mod select,.mod textarea{width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:.86rem;color:var(--t1);outline:none}
+.mod input:focus,.mod textarea:focus{border-color:var(--blue)}
+.mod textarea{resize:vertical;min-height:70px}
+.mod-b{display:flex;gap:7px;margin-top:16px;justify-content:flex-end}
+.mod-b button{padding:8px 18px;border-radius:7px;font-family:inherit;font-size:.84rem;font-weight:600;cursor:pointer;border:1px solid var(--bdr)}
+.mod-b .cn{background:var(--bg3);color:var(--t2)}
+.mod-b .cf{background:var(--bd);color:var(--blue);border-color:var(--bb)}
+.eg{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:4px}
+.eo{padding:5px;text-align:center;font-size:1rem;border-radius:5px;cursor:pointer;background:var(--bg3);border:1px solid transparent}
+.eo:hover{background:var(--bg4)}
+.eo.sel{background:var(--bd);border-color:var(--bb)}
+
+/* Tab selector in modal */
+.tab-sel{display:flex;gap:4px;margin-top:6px}
+.tab-opt{padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;background:var(--bg3);color:var(--t3);border:1px solid transparent;transition:all .15s}
+.tab-opt:hover{color:var(--t2)}
+.tab-opt.sel{background:var(--bd);color:var(--blue);border-color:var(--bb)}
+
+@media(max-width:860px){
+  .sb{transform:translateX(-100%)}.sb.open{transform:translateX(0)}
+  .mt{display:flex}.mn{margin-left:0}
+  .pg{padding:1.5rem 1.2rem 3rem;padding-top:3.5rem}
+  .hg{grid-template-columns:1fr}.cg,.mg{grid-template-columns:1fr}
+  .flow{flex-wrap:wrap;justify-content:center}.fa{transform:rotate(90deg);margin:2px 0}
+  .st{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="ov" id="ov" onclick="closeSB()"></div>
+<div class="mt" onclick="openSB()">☰</div>
+
+<!-- SIDEBAR -->
+<aside class="sb" id="sb">
+  <div class="sb-h"><h2>📱 모니터링 가이드</h2><span>모바일 게임 운영 매뉴얼</span></div>
+  <nav class="sb-n" id="sbn">
+    <div class="ni act" data-pg="home" onclick="go('home',this)"><span class="ic">🏠</span> 홈</div>
+    <div class="sb-lbl">가이드 항목</div>
+    <div class="ni" data-pg="reporting" onclick="go('reporting',this)"><span class="ic">📋</span> 공유/보고 절차</div>
+    <div class="ni ni-sub" data-pg="reporting-general" onclick="go('reporting-general',this)"><span class="ic">📄</span> 일반 이슈 보고</div>
+    <div class="ni ni-sub" data-pg="reporting-urgent" onclick="go('reporting-urgent',this)"><span class="ic">🚨</span> 긴급 이슈 보고</div>
+    <div class="ni" data-pg="priority" onclick="go('priority',this)"><span class="ic">📞</span> 유선 연락 우선순위</div>
+    <div class="ni" data-pg="handling" onclick="go('handling',this)"><span class="ic">🛠</span> 이슈 유형별 처리</div>
+    <div class="ni" data-pg="mistakes" onclick="go('mistakes',this)"><span class="ic">⚠️</span> 자주 하는 실수</div>
+  </nav>
+  <div class="sb-f">
+    <button class="sb-btn" onclick="showModal('section')">➕ 항목 추가</button>
+    <button class="sb-btn" id="ebtn" onclick="toggleEd()">✏️ <span id="elbl">편집 모드</span></button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="mn">
+
+<!-- HOME -->
+<div class="pg act" id="pg-home">
+<div class="hm">
+  <div class="bg"><span class="dot"></span> 모니터링 운영 가이드</div>
+  <h1 contenteditable="false" data-e>모바일 게임<br>모니터링 가이드</h1>
+  <p contenteditable="false" data-e>외주 모니터링 업체를 위한 업무 처리 기준 및 절차 안내입니다.</p>
+  <div class="hg" id="hgrid">
+    <div class="hc" onclick="goN('reporting')"><span class="hi" style="background:var(--bd)">📋</span> 공유/보고 절차</div>
+    <div class="hc" onclick="goN('priority')"><span class="hi" style="background:var(--cd)">📞</span> 유선 연락 우선순위</div>
+    <div class="hc" onclick="goN('handling')"><span class="hi" style="background:var(--gd)">🛠</span> 이슈 유형별 처리</div>
+    <div class="hc" onclick="goN('mistakes')"><span class="hi" style="background:var(--ad)">⚠️</span> 자주 하는 실수</div>
+  </div>
+</div>
+</div>
+
+<!-- REPORTING -->
+<div class="pg" id="pg-reporting">
+  <div class="ptag bl">SECTION 01</div>
+  <h2 class="pt" contenteditable="false" data-e>공유 및 보고 절차</h2>
+  <p class="pd" contenteditable="false" data-e>이슈 발생 시 보고 채널, 형식, 절차를 안내합니다.</p>
+
+  <div class="flow-wrap">
+    <div class="flow" id="flow-reporting">
+      <div class="fi"><div class="fic" style="background:var(--bd);border:2px solid var(--bb)"><span data-e contenteditable="false">🔍</span></div><span class="fl" data-e contenteditable="false">이슈 발견</span><span class="fd" data-e contenteditable="false">모니터링 중 감지</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--cd);border:2px solid var(--cb)"><span data-e contenteditable="false">📝</span></div><span class="fl" data-e contenteditable="false">이슈 기록</span><span class="fd" data-e contenteditable="false">템플릿에 맞춰 작성</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--gd);border:2px solid var(--gb)"><span data-e contenteditable="false">📤</span></div><span class="fl" data-e contenteditable="false">1차 보고</span><span class="fd" data-e contenteditable="false">메신저/이메일</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:rgba(167,139,250,.12);border:2px solid rgba(167,139,250,.25)"><span data-e contenteditable="false">📞</span></div><span class="fl" data-e contenteditable="false">유선 연락</span><span class="fd" data-e contenteditable="false">긴급 시 즉시</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--ad);border:2px solid var(--ab)"><span data-e contenteditable="false">✅</span></div><span class="fl" data-e contenteditable="false">확인 완료</span><span class="fd" data-e contenteditable="false">담당자 확인</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+    </div>
+    <div class="add-row" onclick="addFlow('flow-reporting')">➕ 플로우 단계 추가</div>
+  </div>
+
+  <div class="steps" id="steps-reporting">
+    <div class="st"><div class="sn">1</div><div><h4 data-e contenteditable="false">이슈 발견 즉시 기록</h4><p data-e contenteditable="false">발생 시각·서버·증상 즉시 기록. 스크린샷/영상 반드시 첨부.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">2</div><div><h4 data-e contenteditable="false">보고 채널 선택</h4><p data-e contenteditable="false">일반: 메신저 채널 / 긴급: 메신저 + 유선 병행</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">3</div><div><h4 data-e contenteditable="false">보고 템플릿 준수</h4><div data-e contenteditable="false" class="eb"><strong>[이슈 유형]</strong> 서버 / 버그 / 결제 / 보안<br><strong>[발생 시각]</strong> YYYY-MM-DD HH:MM<br><strong>[영향 범위]</strong> 전체 / 특정 서버 / 특정 유저<br><strong>[증상]</strong> 구체적 현상<br><strong>[첨부]</strong> 스크린샷, 로그, 영상</div></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">4</div><div><h4 data-e contenteditable="false">담당자 확인 수신</h4><p data-e contenteditable="false">"확인" 회신 받아야 완료. 30분 내 회신 없으면 에스컬레이션.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="addStep('steps-reporting')">➕ 스텝 추가</div>
+
+  <div id="alerts-reporting">
+    <div class="al i"><span class="ai">💡</span><div><h4 data-e contenteditable="false">정기 보고</h4><p data-e contenteditable="false">일일 리포트를 매일 업무 종료 시 이메일 발송. "특이사항 없음"도 보고.</p></div><button class="db" onclick="delEl(this,'.al')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="showModal('alert','alerts-reporting')">➕ 알림 박스 추가</div>
+</div>
+
+<!-- SUB: 일반 이슈 -->
+<div class="pg" id="pg-reporting-general">
+  <div class="ptag bl">SECTION 01-1</div>
+  <h2 class="pt" contenteditable="false" data-e>일반 이슈 보고 절차</h2>
+  <p class="pd" contenteditable="false" data-e>긴급하지 않은 일반 이슈의 보고 절차입니다.</p>
+  <div class="flow-wrap">
+    <div class="flow" id="flow-general">
+      <div class="fi"><div class="fic" style="background:var(--bd);border:2px solid var(--bb)"><span data-e contenteditable="false">🔍</span></div><span class="fl" data-e contenteditable="false">이슈 발견</span><span class="fd" data-e contenteditable="false">모니터링 중</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--cd);border:2px solid var(--cb)"><span data-e contenteditable="false">📝</span></div><span class="fl" data-e contenteditable="false">기록 작성</span><span class="fd" data-e contenteditable="false">템플릿 작성</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--gd);border:2px solid var(--gb)"><span data-e contenteditable="false">💬</span></div><span class="fl" data-e contenteditable="false">메신저 보고</span><span class="fd" data-e contenteditable="false">업무 채널</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--ad);border:2px solid var(--ab)"><span data-e contenteditable="false">✅</span></div><span class="fl" data-e contenteditable="false">확인 대기</span><span class="fd" data-e contenteditable="false">1시간 내</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+    </div>
+    <div class="add-row" onclick="addFlow('flow-general')">➕ 플로우 단계 추가</div>
+  </div>
+  <div class="steps" id="steps-general">
+    <div class="st"><div class="sn">1</div><div><h4 data-e contenteditable="false">이슈 기록</h4><p data-e contenteditable="false">보고 템플릿에 맞춰 이슈 유형, 시각, 영향 범위, 증상, 첨부자료를 정리합니다.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">2</div><div><h4 data-e contenteditable="false">메신저 채널 보고</h4><p data-e contenteditable="false">지정된 슬랙/카카오톡 업무방에 보고합니다. 유선 연락은 불필요합니다.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">3</div><div><h4 data-e contenteditable="false">회신 확인</h4><p data-e contenteditable="false">1시간 내 확인 회신이 없으면 3순위 담당자에게 메신저로 재보고합니다.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="addStep('steps-general')">➕ 스텝 추가</div>
+  <div id="alerts-general"></div>
+  <div class="add-row" onclick="showModal('alert','alerts-general')">➕ 알림 박스 추가</div>
+</div>
+
+<!-- SUB: 긴급 이슈 -->
+<div class="pg" id="pg-reporting-urgent">
+  <div class="ptag am">SECTION 01-2</div>
+  <h2 class="pt" contenteditable="false" data-e>긴급 이슈 보고 절차</h2>
+  <p class="pd" contenteditable="false" data-e>서버 다운, 결제 장애 등 긴급 이슈의 보고 절차입니다.</p>
+  <div class="flow-wrap">
+    <div class="flow" id="flow-urgent">
+      <div class="fi"><div class="fic" style="background:var(--rd);border:2px solid var(--rb)"><span data-e contenteditable="false">🚨</span></div><span class="fl" data-e contenteditable="false">긴급 감지</span><span class="fd" data-e contenteditable="false">즉시 대응</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--ad);border:2px solid var(--ab)"><span data-e contenteditable="false">📞</span></div><span class="fl" data-e contenteditable="false">유선 연락</span><span class="fd" data-e contenteditable="false">1순위 담당자</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--cd);border:2px solid var(--cb)"><span data-e contenteditable="false">📝</span></div><span class="fl" data-e contenteditable="false">동시 기록</span><span class="fd" data-e contenteditable="false">메신저 보고 병행</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--gd);border:2px solid var(--gb)"><span data-e contenteditable="false">🔄</span></div><span class="fl" data-e contenteditable="false">상황 업데이트</span><span class="fd" data-e contenteditable="false">진행 상황 공유</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+      <div class="fa">→</div>
+      <div class="fi"><div class="fic" style="background:var(--bd);border:2px solid var(--bb)"><span data-e contenteditable="false">✅</span></div><span class="fl" data-e contenteditable="false">해결 확인</span><span class="fd" data-e contenteditable="false">정상화 보고</span><button class="db" onclick="this.closest('.fi').remove()">✕</button></div>
+    </div>
+    <div class="add-row" onclick="addFlow('flow-urgent')">➕ 플로우 단계 추가</div>
+  </div>
+  <div class="steps" id="steps-urgent">
+    <div class="st"><div class="sn">1</div><div><h4 data-e contenteditable="false">즉시 유선 연락</h4><p data-e contenteditable="false">1순위 QA 팀장에게 즉시 전화. 5분 내 미응답 시 2순위로 에스컬레이션.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">2</div><div><h4 data-e contenteditable="false">메신저 동시 보고</h4><p data-e contenteditable="false">통화와 동시에 메신저 채널에 템플릿 기반 보고. 스크린샷 필수 첨부.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+    <div class="st"><div class="sn">3</div><div><h4 data-e contenteditable="false">상황 업데이트</h4><p data-e contenteditable="false">해결될 때까지 15분 간격으로 진행 상황을 메신저에 업데이트합니다.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="addStep('steps-urgent')">➕ 스텝 추가</div>
+  <div id="alerts-urgent">
+    <div class="al d"><span class="ai">🚨</span><div><h4 data-e contenteditable="false">절대 금지</h4><p data-e contenteditable="false">긴급 이슈를 메신저로만 보고하고 유선 연락을 생략하는 것은 절대 안 됩니다.</p></div><button class="db" onclick="delEl(this,'.al')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="showModal('alert','alerts-urgent')">➕ 알림 박스 추가</div>
+</div>
+
+<!-- PRIORITY -->
+<div class="pg" id="pg-priority">
+  <div class="ptag cy">SECTION 02</div>
+  <h2 class="pt" contenteditable="false" data-e>유선 연락 우선순위</h2>
+  <p class="pd" contenteditable="false" data-e>긴급도별 담당자 연락 순서와 대응 시간 기준입니다.</p>
+  <div class="cg" style="margin-bottom:1.2rem">
+    <div class="cc"><div class="ci" style="background:var(--rd)">🔴</div><h3>긴급</h3><p data-e contenteditable="false">서버 다운, 전체 결제 장애. 즉시 유선.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--ad)">🟠</div><h3>높음</h3><p data-e contenteditable="false">일부 결제 오류, 심각 버그. 15분 내 유선.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--bd)">🔵</div><h3>보통</h3><p data-e contenteditable="false">UI 깨짐, 간헐적 오류. 1시간 내 유선.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">🟢</div><h3>낮음</h3><p data-e contenteditable="false">오타, 번역 오류. 메신저만.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+  </div>
+  <table class="pt2">
+    <thead><tr><th>순위</th><th>담당자</th><th>연락 수단</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pb cr">1순위</span></td><td data-e contenteditable="false"><strong>QA 팀장</strong> (이름/번호)</td><td data-e contenteditable="false">유선→메신저</td><td><span class="tb">5분</span></td></tr>
+      <tr><td><span class="pb hi">2순위</span></td><td data-e contenteditable="false"><strong>운영 PM</strong> (이름/번호)</td><td data-e contenteditable="false">유선→메신저</td><td><span class="tb">15분</span></td></tr>
+      <tr><td><span class="pb md">3순위</span></td><td data-e contenteditable="false"><strong>기술지원</strong> (이름/번호)</td><td data-e contenteditable="false">메신저→유선</td><td><span class="tb">30분</span></td></tr>
+      <tr><td><span class="pb lo">4순위</span></td><td data-e contenteditable="false"><strong>CS팀</strong> (이름/번호)</td><td data-e contenteditable="false">메신저→이메일</td><td><span class="tb">1시간</span></td></tr>
+    </tbody>
+  </table>
+  <div id="alerts-priority">
+    <div class="al w"><span class="ai">⚠️</span><div><h4 data-e contenteditable="false">심야/주말</h4><p data-e contenteditable="false">22:00~09:00, 주말/공휴일은 Critical만 유선.</p></div><button class="db" onclick="delEl(this,'.al')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="showModal('alert','alerts-priority')">➕ 알림 박스 추가</div>
+</div>
+
+<!-- HANDLING -->
+<div class="pg" id="pg-handling">
+  <div class="ptag gr">SECTION 03</div>
+  <h2 class="pt" contenteditable="false" data-e>이슈 유형별 처리 방법</h2>
+  <p class="pd" contenteditable="false" data-e>주요 이슈 유형과 대응 매뉴얼입니다.</p>
+  <div class="cg" id="cards-handling">
+    <div class="cc"><div class="ci" style="background:var(--gd)">🖥</div><h3 data-e contenteditable="false">서버 장애</h3><p data-e contenteditable="false">서버 정보 기록 후 긴급 보고. 교차 확인.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">💳</div><h3 data-e contenteditable="false">결제 장애</h3><p data-e contenteditable="false">무조건 긴급. UID/시각/금액 기록.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">🐛</div><h3 data-e contenteditable="false">인게임 버그</h3><p data-e contenteditable="false">재현 경로 기록. 간헐적이면 조건 파악.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">🔒</div><h3 data-e contenteditable="false">보안/어뷰징</h3><p data-e contenteditable="false">증거 확보 후 보고. 빠르게 전달.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">📢</div><h3 data-e contenteditable="false">커뮤니티 여론</h3><p data-e contenteditable="false">링크+반응 요약 전달. 직접 대응 금지.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+    <div class="cc"><div class="ci" style="background:var(--gd)">🔄</div><h3 data-e contenteditable="false">업데이트/점검</h3><p data-e contenteditable="false">정상 동작 전수 확인. 체크리스트 점검.</p><button class="db" onclick="delEl(this,'.cc')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="addCard('cards-handling')">➕ 이슈 유형 추가</div>
+  <div id="alerts-handling">
+    <div class="al d"><span class="ai">🚨</span><div><h4>절대 금지</h4><p data-e contenteditable="false">자체 판단으로 보고 생략하지 마세요.</p></div><button class="db" onclick="delEl(this,'.al')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="showModal('alert','alerts-handling')">➕ 알림 박스 추가</div>
+</div>
+
+<!-- MISTAKES -->
+<div class="pg" id="pg-mistakes">
+  <div class="ptag am">SECTION 04</div>
+  <h2 class="pt" contenteditable="false" data-e>자주 하는 실수 & 주의사항</h2>
+  <p class="pd" contenteditable="false" data-e>반복 발생 실수 사례와 올바른 처리법입니다.</p>
+  <div class="mg" id="mistakes-grid">
+    <div class="mc"><div class="mh"><span class="em">📸</span><span data-e contenteditable="false">증거 미첨부</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">"서버 안 돼요" 텍스트만</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">스크린샷+서버명+시각+기기 정보</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+    <div class="mc"><div class="mh"><span class="em">⏰</span><span data-e contenteditable="false">시각 누락</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">"아까 오류" 시간 없이</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">"2026-04-10 14:23 KST"</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+    <div class="mc"><div class="mh"><span class="em">🔀</span><span data-e contenteditable="false">긴급도 오판</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">결제 장애를 "보통"으로</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">결제=무조건 Critical+유선</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+    <div class="mc"><div class="mh"><span class="em">📋</span><span data-e contenteditable="false">템플릿 미준수</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">자유 형식 장문</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">유형/시각/범위/증상/첨부 순서</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+    <div class="mc"><div class="mh"><span class="em">🤫</span><span data-e contenteditable="false">보고 생략</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">"사소하니까 패스"</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">모든 이슈 보고</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+    <div class="mc"><div class="mh"><span class="em">🔁</span><span data-e contenteditable="false">에스컬 누락</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="false">연락 안 되면 대기</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="false">다음 순위로 즉시</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="addMistake()">➕ 실수 사례 추가</div>
+  <div id="alerts-mistakes">
+    <div class="al w"><span class="ai">📌</span><div><h4>핵심 원칙</h4><p data-e contenteditable="false"><strong>"애매하면 보고. 누락 > 오류"</strong></p></div><button class="db" onclick="delEl(this,'.al')">✕</button></div>
+  </div>
+  <div class="add-row" onclick="showModal('alert','alerts-mistakes')">➕ 알림 박스 추가</div>
+</div>
+
+</div><!-- /mn -->
+
+<!-- MODALS -->
+<div class="mod-bg" id="mod" onclick="if(event.target===this)closeMod()">
+<div class="mod" id="modContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let isEd=false,modalType='',modalTarget='',selEmoji='📌';
+const SK='guide-v5';
+
+// NAV
+function go(id,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('act'));
+  const pg=document.getElementById('pg-'+id);
+  if(pg)pg.classList.add('act');
+  if(el){document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));el.classList.add('act')}
+  window.scrollTo(0,0);closeSB();
+}
+function goN(id){const el=document.querySelector(`.ni[data-pg="${id}"]`);if(el)go(id,el)}
+function openSB(){document.getElementById('sb').classList.add('open');document.getElementById('ov').classList.add('show')}
+function closeSB(){document.getElementById('sb').classList.remove('open');document.getElementById('ov').classList.remove('show')}
+
+// EDIT
+function toggleEd(){
+  isEd=!isEd;
+  document.body.classList.toggle('ed',isEd);
+  document.getElementById('elbl').textContent=isEd?'저장 완료':'편집 모드';
+  document.getElementById('ebtn').classList.toggle('ea',isEd);
+  document.querySelectorAll('[data-e]').forEach(el=>el.contentEditable=isEd?'true':'false');
+  if(isEd)toast('노란 영역 클릭=수정, ✕=삭제, ➕=추가','a');
+  else{save();toast('저장 완료! ✅','g')}
+}
+
+function delEl(btn,sel){if(confirm('삭제하시겠습니까?'))btn.closest(sel).remove()}
+
+function toast(m,c){const t=document.getElementById('toast');t.textContent=m;t.className='toast vis '+(c||'');setTimeout(()=>t.classList.remove('vis'),2500)}
+
+// SAVE/LOAD
+function save(){
+  const d={};document.querySelectorAll('[data-e]').forEach((el,i)=>d[i]=el.innerHTML);
+  try{localStorage.setItem(SK,JSON.stringify(d))}catch(e){}
+}
+function load(){
+  try{const r=localStorage.getItem(SK);if(!r)return;const d=JSON.parse(r);
+  document.querySelectorAll('[data-e]').forEach((el,i)=>{if(d[i]!==undefined)el.innerHTML=d[i]})}catch(e){}
+}
+
+// ADD FLOW
+function addFlow(containerId){
+  const c=document.getElementById(containerId);
+  const arrow=document.createElement('div');arrow.className='fa';arrow.textContent='→';
+  const fi=document.createElement('div');fi.className='fi';
+  fi.innerHTML=`<div class="fic" style="background:var(--bd);border:2px solid var(--bb)"><span data-e contenteditable="${isEd}">📌</span></div><span class="fl" data-e contenteditable="${isEd}">새 단계</span><span class="fd" data-e contenteditable="${isEd}">설명 입력</span><button class="db" onclick="this.closest('.fi').remove()">✕</button>`;
+  c.appendChild(arrow);c.appendChild(fi);
+}
+
+// ADD STEP
+function addStep(containerId){
+  const c=document.getElementById(containerId);
+  const n=c.children.length+1;
+  const st=document.createElement('div');st.className='st';
+  st.innerHTML=`<div class="sn">${n}</div><div><h4 data-e contenteditable="${isEd}">새 항목</h4><p data-e contenteditable="${isEd}">내용을 입력하세요.</p></div><button class="db" onclick="delEl(this,'.st')">✕</button>`;
+  c.appendChild(st);
+}
+
+// ADD CARD
+function addCard(containerId){
+  const c=document.getElementById(containerId);
+  const cc=document.createElement('div');cc.className='cc';
+  cc.innerHTML=`<div class="ci" style="background:var(--gd)">📌</div><h3 data-e contenteditable="${isEd}">새 이슈 유형</h3><p data-e contenteditable="${isEd}">설명을 입력하세요.</p><button class="db" onclick="delEl(this,'.cc')">✕</button>`;
+  c.appendChild(cc);
+}
+
+// ADD MISTAKE
+function addMistake(){
+  const c=document.getElementById('mistakes-grid');
+  const mc=document.createElement('div');mc.className='mc';
+  mc.innerHTML=`<div class="mh"><span class="em">📌</span><span data-e contenteditable="${isEd}">새 실수 사례</span></div><div class="mbd"><div class="mr"><span class="ml bad">잘못</span><span class="mtt" data-e contenteditable="${isEd}">잘못된 예시</span></div><div class="mr"><span class="ml good">올바름</span><span class="mtt" data-e contenteditable="${isEd}">올바른 예시</span></div></div><button class="db" onclick="delEl(this,'.mc')">✕</button>`;
+  c.appendChild(mc);
+}
+
+// MODAL
+function showModal(type,target){
+  modalType=type;modalTarget=target||'';
+  const mod=document.getElementById('modContent');
+  if(type==='alert'){
+    mod.innerHTML=`<h3>알림 박스 추가</h3>
+      <label>유형</label>
+      <div class="tab-sel" id="alertType">
+        <div class="tab-opt sel" onclick="pickTab(this)" data-v="i">💡 정보</div>
+        <div class="tab-opt" onclick="pickTab(this)" data-v="w">⚠️ 주의</div>
+        <div class="tab-opt" onclick="pickTab(this)" data-v="d">🚨 위험</div>
+      </div>
+      <label>제목</label><input id="mTitle" placeholder="예: 주의사항">
+      <label>내용</label><textarea id="mDesc" placeholder="내용을 입력하세요"></textarea>
+      <div class="mod-b"><button class="cn" onclick="closeMod()">취소</button><button class="cf" onclick="doAddAlert()">추가</button></div>`;
+  } else if(type==='section'){
+    mod.innerHTML=`<h3>새 가이드 항목 추가</h3>
+      <label>아이콘</label>
+      <div class="eg" id="emojiP">${['📌','📊','🎯','💬','🔔','📁','🧾','🗂','📎','🔧','💡','🚀','⭐','🎮','🛡','📱'].map((e,i)=>`<div class="eo${i===0?' sel':''}" onclick="pickE(this)">${e}</div>`).join('')}</div>
+      <label>항목 이름</label><input id="mTitle" placeholder="예: CS 응대 가이드">
+      <label>상위 항목 (선택)</label>
+      <select id="mParent"><option value="">없음 (최상위)</option><option value="reporting">공유/보고 절차</option><option value="priority">유선 연락 우선순위</option><option value="handling">이슈 유형별 처리</option><option value="mistakes">자주 하는 실수</option></select>
+      <label>설명</label><textarea id="mDesc" placeholder="간단한 설명"></textarea>
+      <div class="mod-b"><button class="cn" onclick="closeMod()">취소</button><button class="cf" onclick="doAddSection()">추가</button></div>`;
+  }
+  document.getElementById('mod').classList.add('show');
+}
+function closeMod(){document.getElementById('mod').classList.remove('show')}
+function pickTab(el){el.parentElement.querySelectorAll('.tab-opt').forEach(t=>t.classList.remove('sel'));el.classList.add('sel')}
+function pickE(el){el.parentElement.querySelectorAll('.eo').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');selEmoji=el.textContent}
+
+function doAddAlert(){
+  const type=document.querySelector('#alertType .tab-opt.sel').dataset.v;
+  const title=document.getElementById('mTitle').value.trim();
+  const desc=document.getElementById('mDesc').value.trim();
+  if(!title){alert('제목을 입력해주세요');return}
+  const icons={i:'💡',w:'⚠️',d:'🚨'};
+  const container=document.getElementById(modalTarget);
+  if(!container)return;
+  const al=document.createElement('div');al.className='al '+type;
+  al.innerHTML=`<span class="ai">${icons[type]}</span><div><h4 data-e contenteditable="${isEd}">${title}</h4><p data-e contenteditable="${isEd}">${desc||'내용을 편집하세요.'}</p></div><button class="db" onclick="delEl(this,'.al')">✕</button>`;
+  container.appendChild(al);
+  closeMod();toast('알림 박스가 추가되었습니다!','g');
+}
+
+let customN=0;
+function doAddSection(){
+  const title=document.getElementById('mTitle').value.trim();
+  const desc=document.getElementById('mDesc').value.trim();
+  const parent=document.getElementById('mParent').value;
+  if(!title){alert('이름을 입력해주세요');return}
+  customN++;
+  const id=parent?parent+'-custom'+customN:'custom'+customN;
+
+  // Page
+  const pg=document.createElement('div');pg.className='pg';pg.id='pg-'+id;
+  pg.innerHTML=`<div class="ptag bl">CUSTOM</div>
+    <h2 class="pt" data-e contenteditable="${isEd}">${title}</h2>
+    <p class="pd" data-e contenteditable="${isEd}">${desc||'편집 모드에서 내용을 추가하세요.'}</p>
+    <div class="flow-wrap"><div class="flow" id="flow-${id}"></div><div class="add-row" onclick="addFlow('flow-${id}')">➕ 플로우 단계 추가</div></div>
+    <div class="steps" id="steps-${id}"></div>
+    <div class="add-row" onclick="addStep('steps-${id}')">➕ 스텝 추가</div>
+    <div id="alerts-${id}"></div>
+    <div class="add-row" onclick="showModal('alert','alerts-${id}')">➕ 알림 박스 추가</div>`;
+  document.querySelector('.mn').appendChild(pg);
+
+  // Nav
+  const ni=document.createElement('div');
+  ni.className='ni'+(parent?' ni-sub':'');
+  ni.setAttribute('data-pg',id);
+  ni.setAttribute('onclick',`go('${id}',this)`);
+  ni.innerHTML=`<span class="ic">${selEmoji}</span> ${title}`;
+
+  if(parent){
+    const parentItem=document.querySelector(`.ni[data-pg="${parent}"]`);
+    let sibling=parentItem.nextElementSibling;
+    while(sibling&&sibling.classList.contains('ni-sub'))sibling=sibling.nextElementSibling;
+    sibling?parentItem.parentNode.insertBefore(ni,sibling):parentItem.parentNode.appendChild(ni);
+  } else {
+    const foot=document.querySelector('.sb-f');
+    foot.parentNode.querySelector('.sb-n').appendChild(ni);
+  }
+
+  // Home card
+  if(!parent){
+    const hc=document.createElement('div');hc.className='hc';
+    hc.setAttribute('onclick',`goN('${id}')`);
+    hc.innerHTML=`<span class="hi" style="background:var(--bd)">${selEmoji}</span> ${title}`;
+    document.getElementById('hgrid').appendChild(hc);
+  }
+
+  closeMod();go(id,ni);toast(`"${title}" 추가 완료!`,'g');
+}
+
+load();
+</script>
+</body>
+</html>
